@@ -1,0 +1,13 @@
+1. module restore mpi-track
+  Currently Loaded Modules:
+  1) intel-mpi/2021.10.0   2) python/3.8.6   3) allocations/1.0   4) psc.allocations.user/1.0   5) anaconda3/2024.10-1	
+
+2. (Setup/Install)
+  ./setup_conda_env.sh
+
+3. Execute (serial)
+   python ./testing --train
+
+4. Execute (parallel gpu)
+   salloc -J Interact --partition=GPU-small,GPU-shared --gpus=v100:2 --reservation=ihpcssmpigpu
+   python ./testing.py --train --gpu --model_p_MPI
