@@ -14,7 +14,8 @@ program struct
 
     type (Particle) p(NELEM), particles(NELEM)
     integer particletype, oldtypes(0:1)   ! required variables
-    integer blockcounts(0:1), offsets(0:1), extent
+    integer blockcounts(0:1)
+    integer(kind=MPI_ADDRESS_KIND) offsets(0:1), lb, extent
     tag = 1
 
     call MPI_INIT(ierr)
@@ -27,12 +28,12 @@ program struct
     !      Make a new struct derived datatype.
     !
     !    Function Call:
-    !       MPI_TYPE_STRUCT(INTEGER COUNT, 
-    !                       INTEGER(*) ARRAY_OF_BLOCKLENGTHS,
-    !                       INTEGER(*) ARRAY_OF_DISPLACEMENTS,
-    !                       INTEGER(*) ARRAY_OF_TYPES,
-    !                       INTEGER NEWTYPE,
-    !                       INTEGER IERROR)
+    !       MPI_TYPE_CREATE_STRUCT(INTEGER COUNT,
+    !                              INTEGER(*) ARRAY_OF_BLOCKLENGTHS,
+    !                              INTEGER(KIND=MPI_ADDRESS_KIND)(*) ARRAY_OF_DISPLACEMENTS,
+    !                              INTEGER(*) ARRAY_OF_TYPES,
+    !                              INTEGER NEWTYPE,
+    !                              INTEGER IERROR)
     !
     !   Input Parameters:
     !       COUNT
@@ -57,7 +58,7 @@ program struct
 
     ! TODO: setup description of the 2 MPI_INTEGER fields n, type 
     !       We first figure offset by getting size of MPI_REAL
-    call MPI_TYPE_EXTENT(MPI_REAL, extent, ierr)
+    call MPI_TYPE_GET_EXTENT(MPI_REAL, lb, extent, ierr)
     offsets(1) =  ! TODO; HINT: how many 'extent's do we need?
     oldtypes(1) =  ! TODO 
     blockcounts(1) =  ! TODO
@@ -74,16 +75,18 @@ program struct
             particles(i) = Particle ( 1.0*i, -1.0*i, 1.0*i, 0.25, i, mod(i,2) )
         end do
 
-        do i=0, numtasks-1
+        do i=1, numtasks-1
             call MPI_SEND(particles, NELEM, particletype, i, tag, &
                           MPI_COMM_WORLD, ierr)
         end do
+        ! copy locally
+        p = particles
+    else
+        ! receive particletype data from task 0
+        source = 0
+        call MPI_RECV(p, NELEM, particletype, source, tag, &
+                      MPI_COMM_WORLD, stat, ierr)
     endif
-
-    ! all tasks receive particletype data
-    source = 0
-    call MPI_RECV(p, NELEM, particletype, source, tag, &
-                  MPI_COMM_WORLD, stat, ierr)
 
     print *, 'rank= ',rank,' p(3)= ',p(3)
 

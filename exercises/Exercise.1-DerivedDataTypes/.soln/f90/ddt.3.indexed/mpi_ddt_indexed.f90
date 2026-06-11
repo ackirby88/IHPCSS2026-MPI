@@ -61,16 +61,18 @@ program indexed
     call MPI_TYPE_COMMIT(indextype, ierr)
     ! =====================================================================
 
-    ! post recv first! all tasks receive indextype data from task 0
-    source = 0
-    call MPI_RECV(b, NELEMENTS, MPI_REAL, source, tag, MPI_COMM_WORLD, &
-                    stat, ierr)
-                    
     if (rank .eq. 0) then
-        ! task 0 sends one element of indextype to all tasks
-        do i=0, numtasks-1
+        ! task 0 sends one element of indextype to all tasks (skip self to avoid deadlock)
+        do i=1, numtasks-1
             call MPI_SEND(a, 1, indextype, i, tag, MPI_COMM_WORLD, ierr)
         end do
+        ! copy indexed elements locally
+        b(0:3) = a(5:8)
+        b(4:5) = a(12:13)
+    else
+        source = 0
+        call MPI_RECV(b, NELEMENTS, MPI_REAL, source, tag, MPI_COMM_WORLD, &
+                        stat, ierr)
     endif
 
     print *, 'rank= ',rank,' b= ',b

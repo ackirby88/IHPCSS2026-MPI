@@ -59,14 +59,17 @@ int main(int argc, char *argv[])  {
     /* ===================================================================== */
 
     if (rank == 0) {
-        for (i=0; i<numtasks; i++) {
+        for (i=1; i<numtasks; i++) {
             // task 0 sends one element of indextype to all tasks
             MPI_Send(a, 1, indextype, i, tag, MPI_COMM_WORLD);
         }
+        // copy indexed elements locally
+        for (i=0; i<4; i++) b[i]   = a[5+i];
+        for (i=0; i<2; i++) b[4+i] = a[12+i];
+    } else {
+        // receive indextype data from task 0
+        MPI_Recv(b, NELEMENTS, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
     }
-
-    // all tasks receive indextype data from task 0
-    MPI_Recv(b, NELEMENTS, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
     printf("rank= %d  b= %3.1f %3.1f %3.1f %3.1f %3.1f %3.1f\n",
             rank,b[0],b[1],b[2],b[3],b[4],b[5]);
 

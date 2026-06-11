@@ -58,14 +58,16 @@ int main(int argc, char *argv[])  {
     MPI_Type_commit(&indextype);
     /* ===================================================================== */
 
-    // Post recv first! all tasks receive indextype data from task 0
-    MPI_Recv(b, NELEMENTS, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
-    
     if (rank == 0) {
-        for (i=0; i<numtasks; i++) {
-            // task 0 sends one element of indextype to all tasks
+        // task 0 sends one element of indextype to all tasks (skip self to avoid deadlock)
+        for (i=1; i<numtasks; i++) {
             MPI_Send(a, 1, indextype, i, tag, MPI_COMM_WORLD);
         }
+        // copy indexed elements locally
+        for (i=0; i<4; i++) b[i]   = a[5+i];
+        for (i=0; i<2; i++) b[4+i] = a[12+i];
+    } else {
+        MPI_Recv(b, NELEMENTS, MPI_FLOAT, source, tag, MPI_COMM_WORLD, &stat);
     }
 
     printf("rank= %d  b= %3.1f %3.1f %3.1f %3.1f %3.1f %3.1f\n",

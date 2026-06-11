@@ -21,11 +21,13 @@ b = np.empty(SIZE, dtype='f')
 
 if numtasks == SIZE:
     # =========================================================================
-    # Step 1. Create an MPI Contiguous Type
-    #    MPI.Datatype.Create_contiguous(count)
-    #      count - replication count (non-negative integer)
+    # Step 1. Create an MPI Vector Type
+    #    MPI.Datatype.Create_vector(count, blocklength, stride)
+    #      count       - number of blocks
+    #      blocklength - number of elements in each block
+    #      stride      - number of elements between start of each block
 
-    # TODO: create the contiguous data type
+    # TODO: create the vector data type
 
     # TODO: commit the new derived datatype
 
@@ -34,20 +36,17 @@ if numtasks == SIZE:
     if rank == 0:
         for i in range(1, numtasks):
             # =====================================================================
-            # Step 2. Send contiguous data type using comm.Send.
-            #    comm.Send([buf, count, datatype], dest=dest, tag=tag)
-            #      buf      - send buffer
-            #      count    - number of datatype elements to send
-            #      datatype - MPI datatype
-            #      dest     - rank of destination
-            #      tag      - message tag
-            # TODO: send each ROW i of array 'a' to rank i using the derived data type.
+            # Step 2. Send a vector data type.
+            #   HINT: a.ravel()[i:] starts the buffer at column i (flat offset i),
+            #         mirroring C's &a[0][i]. The vector type then strides through
+            #         the row-major data to extract column i.
+            # TODO: send each COLUMN i of array 'a' to rank i using the derived data type.
 
             # =====================================================================
-        # TODO: copy row 0 locally into b
+        # TODO: copy column 0 locally into b
     else:
-        # receive rowtype data from task 0
-        comm.Recv([b, SIZE, MPI.FLOAT], source=source, tag=tag)
+        # TODO: receive into b
+        pass
 
     print(f"rank= {rank}  b= {b[0]:.1f} {b[1]:.1f} {b[2]:.1f} {b[3]:.1f}")
 else:

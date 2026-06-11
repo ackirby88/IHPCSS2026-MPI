@@ -63,15 +63,18 @@ program indexed
 
     if (rank .eq. 0) then
         ! task 0 sends one element of indextype to all tasks
-        do i=0, numtasks-1
+        do i=1, numtasks-1
             call MPI_SEND(a, 1, indextype, i, tag, MPI_COMM_WORLD, ierr)
         end do
+        ! copy indexed elements locally
+        b(0:3) = a(5:8)
+        b(4:5) = a(12:13)
+    else
+        ! receive indextype data from task 0
+        source = 0
+        call MPI_RECV(b, NELEMENTS, MPI_REAL, source, tag, MPI_COMM_WORLD, &
+                        stat, ierr)
     endif
-
-    ! all tasks receive indextype data from task 0
-    source = 0
-    call MPI_RECV(b, NELEMENTS, MPI_REAL, source, tag, MPI_COMM_WORLD, &
-                    stat, ierr)
     print *, 'rank= ',rank,' b= ',b
 
     ! free datatype when done using it

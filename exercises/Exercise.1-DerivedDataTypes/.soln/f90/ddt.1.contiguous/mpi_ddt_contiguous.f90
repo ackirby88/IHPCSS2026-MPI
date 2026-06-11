@@ -47,49 +47,50 @@ program contiguous
     ! =====================================================================
 
     if (numtasks .eq. SIZE) then
-        ! post recv first! all tasks receive columntype data from task 0
-        source = 0
-        call MPI_RECV(b, SIZE, MPI_REAL, source, tag, MPI_COMM_WORLD, stat, ierr)
-        
-        ! task 0 sends one element of columntype to all tasks
+        ! ===================================================================
+        ! Step 2. Send contiguous data type using MPI_Send.
+        !    Summary:
+        !      Call MPI_Send
+        !
+        !    Function Call:
+        !      MPI_SEND(type(*) buf,
+        !               INTEGER count,
+        !               INTEGER datatype,
+        !               INTEGER dest,
+        !               INTEGER tag,
+        !               INTEGER comm,
+        !               INTEGER ierr)
+        !
+        !   Input Parameters:
+        !     buf
+        !         initial address of send buffer (choice)
+        !     count
+        !         number of elements in send buffer (non-negative integer)
+        !     datatype
+        !         datatype of each send buffer element (handle)
+        !     dest
+        !         rank of destination (integer)
+        !     tag
+        !         message tag (integer)
+        !     comm
+        !         communicator (handle)
+        !
         if (rank .eq. 0) then
-            ! ===================================================================
-            ! Step 2. Send continguous data type using MPI_Send.
-            !    Summary:
-            !      Call MPI_Send 
-            !
-            !    Function Call:
-            !      MPI_SEND(type(*) buf,
-            !               INTEGER count,
-            !               INTEGER datatype,
-            !               INTEGER dest,
-            !               INTEGER tag,
-            !               INTEGER comm,
-            !               INTEGER ierr)
-            !      
-            !   Input Parameters:
-            !     buf
-            !         initial address of send buffer (choice)
-            !     count
-            !         number of elements in send buffer (non-negative integer)
-            !     datatype
-            !         datatype of each send buffer element (handle)
-            !     dest
-            !         rank of destination (integer)
-            !     tag
-            !         message tag (integer)
-            !     comm
-            !         communicator (handle)
-            !
-            do i=0, numtasks-1
-                !  TODO: send each ROW i of the array 'a' using the derived data type.
+            ! task 0 sends each ROW i to rank i (skip self to avoid deadlock)
+            source = 0
+            do i=1, numtasks-1
                 call MPI_SEND(a(0,i), 1, columntype, i, tag, MPI_COMM_WORLD, ierr)
             end do
-            ! ===================================================================
+            ! copy row 0 locally
+            b = a(:,0)
+        else
+            source = 0
+            call MPI_RECV(b, SIZE, MPI_REAL, source, tag, MPI_COMM_WORLD, stat, ierr)
         endif
+        ! ===================================================================
         print *, 'rank= ',rank,' b= ',b
     else
-        print *, 'Must specify',SIZE,' processors.  Terminating.' 
+        print *, 'Must specify',SIZE,' processors.  Terminating.'
     endif
 
     ! free datatype when done using it

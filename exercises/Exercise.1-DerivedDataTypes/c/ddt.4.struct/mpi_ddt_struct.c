@@ -15,9 +15,7 @@ int main(int argc, char *argv[])  {
     MPI_Datatype particletype, oldtypes[2];   // required variables
     int blockcounts[2];
 
-    // MPI_Aint type used to be consistent with syntax of
-    // MPI_Type_extent routine
-    MPI_Aint offsets[2], extent;
+    MPI_Aint offsets[2], lb, extent;
     MPI_Status stat;
 
     MPI_Init(&argc,&argv);
@@ -30,11 +28,11 @@ int main(int argc, char *argv[])  {
      *      Make a new struct derived datatype.
      *
      *    Function Call:
-     *       int MPI_Type_struct(int count,
-     *                           const int *array_of_blocklengths,
-     *                           const MPI_Aint *array_of_displacements,
-     *                           const MPI_Datatype *array_of_types,
-     *                           MPI_Datatype *newtype);
+     *       int MPI_Type_create_struct(int count,
+     *                                  const int *array_of_blocklengths,
+     *                                  const MPI_Aint *array_of_displacements,
+     *                                  const MPI_Datatype *array_of_types,
+     *                                  MPI_Datatype *newtype);
      *
      *   Input Parameters:
      *       count
@@ -57,7 +55,7 @@ int main(int argc, char *argv[])  {
 
     // TODO: setup description of the 2 MPI_INT fields n, type.
     //      We first figure offset by getting size of MPI_FLOAT
-    MPI_Type_extent(MPI_FLOAT, &extent);
+    MPI_Type_get_extent(MPI_FLOAT, &lb, &extent);
     offsets[1] = //TODO; HINT: how many 'extent's do we need?
     oldtypes[1] = //TODO;
     blockcounts[1] = //TODO;
@@ -73,18 +71,20 @@ int main(int argc, char *argv[])  {
         for (i=0; i<NELEM; i++) {
             particles[i].x = i * 1.0;
             particles[i].y = i * -1.0;
-            particles[i].z = i * 1.0; 
+            particles[i].z = i * 1.0;
             particles[i].velocity = 0.25;
             particles[i].n = i;
-            particles[i].type = i % 2; 
+            particles[i].type = i % 2;
         }
-        for (i=0; i<numtasks; i++) {
+        for (i=1; i<numtasks; i++) {
             MPI_Send(particles, NELEM, particletype, i, tag, MPI_COMM_WORLD);
         }
+        // copy locally
+        for (i=0; i<NELEM; i++) p[i] = particles[i];
+    } else {
+        // receive particletype data from task 0
+        MPI_Recv(p, NELEM, particletype, source, tag, MPI_COMM_WORLD, &stat);
     }
-
-    // all tasks receive particletype data
-    MPI_Recv(p, NELEM, particletype, source, tag, MPI_COMM_WORLD, &stat);
 
     printf("rank= %d   %3.2f %3.2f %3.2f %3.2f %d %d\n", rank,p[3].x,
            p[3].y,p[3].z,p[3].velocity,p[3].n,p[3].type);
